@@ -34,38 +34,56 @@ class Player(GameSprite):
         if keys_pressed[K_d] and self.rect.x < W - self.width:
             self.rect.x += self.speed
 
+    def fire(self):
+        bullet = Bullet(self.rect.centerx, self.rect.top, 15, 20, 20, "images/bullet.png")
+        bullets.add(bullet)
+
 class Enemy(GameSprite):
     def update(self):
-        global killed 
+        global skipped 
         self.rect.y += self.speed
         if self.rect.y > H - self.height:
             self.rect.x = randint(0, H - self.width)
             self.rect.y = 0 
-            killed += 1 
+            skipped += 1 
+            
 
 class Asteroid(GameSprite):
     def __init__(self, x, y, width, height, speed, img):
         super().__init__(x, y, width, height, speed, img)
         self.angle = 0 
         self.original_image = self.image
+
     def update(self):
         global killed 
         self.rect.y += self.speed
-        self.angle += 2.5
+        self.angle = (self.angle + 2.5) % 360
         self.image = transform.rotate(self.original_image, self.angle)
+        self.rect = self.image.get_rect(center=self.rect.center)
         if self.rect.y > H - self.height:
             self.rect.x = randint(0, W - self.width)
             self.rect.y = 0 
             killed += 1 
+
+class Bullet(GameSprite):
+    def update(self):
+        self.rect.y -= self.speed
+        if self.rect.y < 0:
+            self.kill()
+
 
 player = Player(W / 2, H - 100, 50, 100, 10, "images/rocket.png")
 enemies = sprite.Group()
 for i in range(5):
     enemy = Enemy(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/ufo.png') 
     enemies.add(enemy)
+
+asteroids = sprite.Group()
+for i in range(3):
     asteroid = Asteroid(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/asteroid.png') 
+    asteroids.add(asteroid)
 
-
+bullets = sprite.Group()
 life = 3
 killed = 0
 skipped = 0
@@ -74,16 +92,41 @@ while game:
     for e in event.get():
         if e.type == QUIT:
             game = False
+        if e.type == KEYDOWN:
+            if e.key == K_SPACE:
+                player.fire()
 
     window.blit(bg, (0, 0))
     player.draw()
     player.move()
-
+  
     enemies.draw(window)
     enemies.update()
 
-    asteroid.draw()
-    asteroid.update()
+    asteroids.draw(window)
+    asteroids.update()
+
+    bullets.draw(window)
+    bullets.update()
+
+    if sprite.groupcollide(bullets, enemies, True, True, ):
+        killed += 1
+        enemy = Enemy(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/ufo.png') 
+        enemies.add(enemy)
+    if sprite.groupcollide(bullets, asteroids, True, False):
+        pass
+
+    if sprite.spritecollide(player, asteroids, True):
+        life -= 1
+        asteroid = Asteroid(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/asteroid.png') 
+        asteroids.add(asteroid)
+
+    if sprite.spritecollide(player, enemies, True):
+        life -= 1 
+        enemy = Enemy(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/ufo.png') 
+        enemies.add(enemy)
+
+
 
     display.update()
     clock.tick(60)
