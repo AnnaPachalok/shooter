@@ -4,6 +4,18 @@ from random import randint
 init()
 
 W, H = 500, 700
+FPS = 60
+
+mixer.init()
+mixer.music.load("sounds/space.ogg")
+mixer.music.set_volume(0.2)
+mixer.music.play()
+
+fire_snd = mixer.Sound("sounds/fire.ogg")
+
+font.init()
+font1 = font.SysFont("fonts/Bebas_Neue_Cyrillic.ttf", 35, bold=True)
+font2 = font.SysFont("fonts/Bebas_Neue_Cyrillic.ttf", 100, bold=True)
 window = display.set_mode((W, H))
 display.set_caption("shooter")
 display.set_icon(image.load("images/ufo.png"))
@@ -94,6 +106,7 @@ while game:
             game = False
         if e.type == KEYDOWN:
             if e.key == K_SPACE:
+                fire_snd.play()
                 player.fire()
 
     window.blit(bg, (0, 0))
@@ -109,24 +122,33 @@ while game:
     bullets.draw(window)
     bullets.update()
 
-    if sprite.groupcollide(bullets, enemies, True, True, ):
+    if sprite.groupcollide(bullets, enemies, True, True, ): #зіткнення куль з ворогами 
         killed += 1
         enemy = Enemy(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/ufo.png') 
         enemies.add(enemy)
+        #зіткнення куль з астероїдами 
     if sprite.groupcollide(bullets, asteroids, True, False):
         pass
-
+        #зітенення гравця з астероїдами
     if sprite.spritecollide(player, asteroids, True):
         life -= 1
         asteroid = Asteroid(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/asteroid.png') 
         asteroids.add(asteroid)
-
+        #зіткнення граця з ворогами
     if sprite.spritecollide(player, enemies, True):
         life -= 1 
         enemy = Enemy(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/ufo.png') 
         enemies.add(enemy)
+    
+    if life < 0:
+        game = False
 
+    skipped_txt = font1.render(f"Пропущено: {skipped}", True, (255, 255, 255))
+    killed_txt = font1.render(f"Збито: {killed}", True, (255, 255, 255))
+    life_txt = font2.render(str(life), True, (0, 255, 0))
 
-
+    window.blit(skipped_txt, (10, 10)) 
+    window.blit(killed_txt, (10, 40))
+    window.blit(life_txt, (W - 50, 10))
     display.update()
-    clock.tick(60)
+    clock.tick(FPS)
