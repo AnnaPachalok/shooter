@@ -83,8 +83,16 @@ class Bullet(GameSprite):
         if self.rect.y < 0:
             self.kill()
 
-
+class Buff(GameSprite):
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.y > H - self.height:
+            self.rect.x = randint(0, W - self.width)
+            self.rect.y = -100
+    
 player = Player(W / 2, H - 100, 50, 100, 10, "images/rocket.png")
+life_boost = Buff(randint(0, W - 70), -100, 50, 50, randint(2, 5), "aid-removebg-preview.png")
+bullets_boost = Buff(randint(0, W - 70), -100, 50, 50, randint(2, 5), "ammo.png")
 enemies = sprite.Group()
 for i in range(5):
     enemy = Enemy(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/ufo.png') 
@@ -99,56 +107,93 @@ bullets = sprite.Group()
 life = 3
 killed = 0
 skipped = 0
+shoot_count = 30
 game = True
+finish = False 
 while game:
     for e in event.get():
         if e.type == QUIT:
             game = False
+
         if e.type == KEYDOWN:
             if e.key == K_SPACE:
-                fire_snd.play()
-                player.fire()
-
-    window.blit(bg, (0, 0))
-    player.draw()
-    player.move()
-  
-    enemies.draw(window)
-    enemies.update()
-
-    asteroids.draw(window)
-    asteroids.update()
-
-    bullets.draw(window)
-    bullets.update()
-
-    if sprite.groupcollide(bullets, enemies, True, True, ): #зіткнення куль з ворогами 
-        killed += 1
-        enemy = Enemy(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/ufo.png') 
-        enemies.add(enemy)
-        #зіткнення куль з астероїдами 
-    if sprite.groupcollide(bullets, asteroids, True, False):
-        pass
-        #зітенення гравця з астероїдами
-    if sprite.spritecollide(player, asteroids, True):
-        life -= 1
-        asteroid = Asteroid(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/asteroid.png') 
-        asteroids.add(asteroid)
-        #зіткнення граця з ворогами
-    if sprite.spritecollide(player, enemies, True):
-        life -= 1 
-        enemy = Enemy(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/ufo.png') 
-        enemies.add(enemy)
+                if shoot_count > 0:
+                    fire_snd.play()
+                    player.fire()
+                    shoot_count -= 1
+            if e.key == K_ESCAPE:
+                finish = False
+    if not finish:
+            
+        window.blit(bg, (0, 0))
+        player.draw()
+        player.move()
     
-    if life < 0:
-        game = False
+        enemies.draw(window)
+        enemies.update()
 
-    skipped_txt = font1.render(f"Пропущено: {skipped}", True, (255, 255, 255))
-    killed_txt = font1.render(f"Збито: {killed}", True, (255, 255, 255))
-    life_txt = font2.render(str(life), True, (0, 255, 0))
+        asteroids.draw(window)
+        asteroids.update()
 
-    window.blit(skipped_txt, (10, 10)) 
-    window.blit(killed_txt, (10, 40))
-    window.blit(life_txt, (W - 50, 10))
-    display.update()
+        bullets.draw(window)
+        bullets.update()
+
+        life_boost.draw()
+        life_boost.update()
+
+        bullets_boost.draw()
+        bullets_boost.update()
+
+        if sprite.groupcollide(bullets, enemies, True, True, ): #зіткнення куль з ворогами 
+            killed += 1
+            enemy = Enemy(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/ufo.png') 
+            enemies.add(enemy)
+            #зіткнення куль з астероїдами 
+        if sprite.groupcollide(bullets, asteroids, True, False):
+            pass
+            #зітенення гравця з астероїдами
+        if sprite.spritecollide(player, asteroids, True):
+            life -= 1
+            asteroid = Asteroid(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/asteroid.png') 
+            asteroids.add(asteroid)
+            #зіткнення граця з ворогами
+        if sprite.spritecollide(player, enemies, True):
+            life -= 1 
+            enemy = Enemy(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/ufo.png') 
+            enemies.add(enemy)
+        
+        if life < 0:
+            finish = True
+            mixer.music.stop()
+
+
+        skipped_txt = font1.render(f"Пропущено: {skipped}", True, (255, 255, 255))
+        killed_txt = font1.render(f"Збито: {killed}", True, (255, 255, 255))
+        life_txt = font2.render(str(life), True, (0, 255, 0))
+        bullets_txt = font1.render(f"кулі: {shoot_count}", True, (255, 255, 255))
+
+        window.blit(skipped_txt, (10, 10))  
+        window.blit(killed_txt, (10, 40))
+        window.blit(life_txt, (W - 50, 10))
+        window.blit(bullets_txt, (10, 80))
+
+    else:
+        life = 3 
+        skipped = 0 
+        killed = 0  
+        shoot_count = 30
+        for enemy in enemies:
+            enemy.kill()
+        for asteroid in asteroids:
+            asteroid.kill()
+        for bullet in bullets:
+            bullet.kill()
+        for i in range(3):
+            asteroid = Asteroid(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/asteroid.png') 
+            asteroids.add(asteroid)
+        for i in range(5):
+            enemy = Enemy(randint(0, W - 70), randint(-35, 10), 70, 35, randint(1, 3), 'images/ufo.png') 
+            enemies.add(enemy)
+
+    display.update() 
     clock.tick(FPS)
